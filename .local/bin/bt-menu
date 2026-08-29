@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# fzf-driven Bluetooth menu wrapping bluetoothctl. Device list shows
+# instantly; actions are hotkeys directly on the list (mirrors bluetuith's
+# own s/p/a/c, Ctrl-modified so plain letters still type into the filter).
+# No `.sh` extension -- see .stow-local-ignore.
+set -euo pipefail
+
+MAC_RE='[0-9A-F]{2}(:[0-9A-F]{2}){5}'
+
+extract_mac() {
+    grep -oE "$MAC_RE" <<<"$1" | head -1
+}
+
+list_devices() {
+    local connected
+    connected="$(bluetoothctl devices Connected 2>/dev/null | awk '{print $2}')"
+    bluetoothctl devices 2>/dev/null | while IFS=' ' read -r _ mac name; do
+        [ -z "$mac" ] && continue
+        if grep -qxF "$mac" <<<"$connected"; then
+            printf '\xe2\x97\x8f\t%s\t%s\n' "$name" "$mac"
+        else
+            printf '\xe2\x97\x8b\t%s\t%s\n' "$name" "$mac"
+        fi
+    done
+}
+
+# Hidden modes used by fzf's --bind actions below.
+case "${1:-}" in
+--list)
+    list_devices
+    exit 0
+    ;;
+--rescan)
+    bluetoothctl --timeout 5 scan on >/dev/null 2>&1 || true
+    list_devices
+    exit 0
+    ;;
+--connect)
+    bluetoothctl connect "$(extract_mac "$2")"
+    exit 0
+    ;;
+--disconnect)
+    bluetoothctl disconnect "$(extract_mac "$2")"
+    exit 0
+    ;;
+--pair)
+    bluetoothctl pair "$(extract_mac "$2")"
+    exit 0
+    ;;
+--remove)
+    bluetoothctl remove "$(extract_mac "$2")"
+    exit 0
+    ;;
+--toggle-power)
+    if bluetoothctl show | grep -q 'Powered: yes'; then
+        bluetoothctl power off
+    else
+        bluetoothctl power on
+    fi
+    exit 0
+    ;;
+--info)
+    bluetoothctl info "$(extract_mac "$2")"
+    exit 0
+    ;;
+esac
+
+list_devices | fzf --prompt='bt> ' --height=60% --reverse \
+    --delimiter=$'\t' --with-nth=1,2 \
+    --header='enter connect  ctrl-d disconnect  ctrl-p pair  ctrl-x remove  ctrl-s scan  ctrl-a power  ctrl-i info' \
+    --bind 'ctrl-j:down,ctrl-k:up' \
+    --bind 'enter:execute(bt-menu --connect {})+reload(bt-menu --list)' \
+    --bind 'ctrl-d:execute(bt-menu --disconnect {})+reload(bt-menu --list)' \
+    --bind 'ctrl-p:execute(bt-menu --pair {})+reload(bt-menu --list)' \
+    --bind 'ctrl-x:execute(bt-menu --remove {})+reload(bt-menu --list)' \
+    --bind 'ctrl-s:reload(bt-menu --rescan)' \
+    --bind 'ctrl-a:execute(bt-menu --toggle-power)+reload(bt-menu --list)' \
+    --bind 'ctrl-i:execute(bt-menu --info {} | less)' \
+    >/dev/null

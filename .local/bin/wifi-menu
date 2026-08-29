@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# fzf-driven Wi-Fi menu wrapping nmcli. Network list shows instantly (cached
+# NetworkManager scan); actions are hotkeys directly on the list.
+# No `.sh` extension -- see .stow-local-ignore.
+set -euo pipefail
+
+wifi_device() {
+    nmcli -t -f DEVICE,TYPE device status | awk -F: '$2=="wifi"{print $1; exit}'
+}
+
+extract_ssid() {
+    cut -d "$(printf '\t')" -f2 <<<"$1"
+}
+
+list_networks() {
+    local device
+    device="$(wifi_device)"
+    nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY device wifi list ifname "$device" \
+        | awk -F: '!seen[$2]++' \
+        | while IFS=: read -r active ssid signal security; do
+            [ -z "$ssid" ] && continue
+            if [ "$active" = "yes" ]; then
+                dot=$'\xe2\x97\x8f'
+            else
+                dot=$'\xe2\x97\x8b'
+            fi
+            printf '%s\t%s\t%s%%\t%s\n' "$dot" "$ssid" "$signal" "${security:-open}"
+        done
+}
+
+# Hidden modes used by fzf's --bind actions below.
+case "${1:-}" in
+--list)
+    list_networks
+    exit 0
+    ;;
+--rescan)
+    device="$(wifi_device)"
+    nmcli device wifi rescan ifname "$device" >/dev/null 2>&1 || true
+    sleep 1
+    list_networks
+    exit 0
+    ;;
+--connect)
+    ssid="$(extract_ssid "$2")"
+    if nmcli -t -f NAME connection show | grep -qxF "$ssid"; then
+        nmcli connection up id "$ssid"
+    else
+        read -r -s -p "Password for '$ssid' (empty if open): " password
+        echo
+        if [ -n "$password" ]; then
+            nmcli device wifi connect "$ssid" password "$password"
+        else
+            nmcli device wifi connect "$ssid"
+        fi
+    fi
+    exit 0
+    ;;
+--disconnect)
+    nmcli device disconnect "$(wifi_device)"
+    exit 0
+    ;;
+--forget)
+    ssid="$(extract_ssid "$2")"
+    nmcli connection delete id "$ssid" || true
+    exit 0
+    ;;
+--info)
+    nmcli device show "$(wifi_device)"
+    exit 0
+    ;;
+esac
+
+list_networks | fzf --prompt='wifi> ' --height=60% --reverse \
+    --delimiter=$'\t' --with-nth=1,2,3,4 \
+    --header='enter connect  ctrl-d disconnect  ctrl-x forget  ctrl-s scan  ctrl-i info' \
+    --bind 'ctrl-j:down,ctrl-k:up' \
+    --bind 'enter:execute(wifi-menu --connect {})+reload(wifi-menu --list)' \
+    --bind 'ctrl-d:execute(wifi-menu --disconnect)+reload(wifi-menu --list)' \
+    --bind 'ctrl-x:execute(wifi-menu --forget {})+reload(wifi-menu --list)' \
+    --bind 'ctrl-s:reload(wifi-menu --rescan)' \
+    --bind 'ctrl-i:execute(wifi-menu --info | less)' \
+    >/dev/null

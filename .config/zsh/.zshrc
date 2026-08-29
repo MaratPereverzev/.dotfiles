@@ -167,3 +167,8 @@ alias fd='fdfind'
 # clear shortcuts
 alias cl='clear'
 alias cls='clear'
+
+# System controls
+alias wifi='wifi-menu'
+alias bt='bt-menu'
+alias sound='pulsemixer'
