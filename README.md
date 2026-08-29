@@ -117,7 +117,7 @@ Plugins are managed by [TPM](https://github.com/tmux-plugins/tpm) — clone it m
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ```
 
-Then start tmux and press `Ctrl+b` `Shift+I` (the default tmux prefix is still active alongside the no-prefix bindings below) to fetch the plugins: `tmux-resurrect` + `tmux-continuum` (auto-save/restore sessions and pane layout).
+Then start tmux and press `Ctrl+b` `Shift+I` (the default tmux prefix is still active alongside the no-prefix bindings below) to fetch the plugins: `tmux-resurrect` + `tmux-continuum` (auto-save/restore sessions and pane layout). TPM itself lives at `~/.tmux/plugins/tpm`, but since this config is at the XDG path (`~/.config/tmux/tmux.conf`), TPM installs the actual plugins under `~/.config/tmux/plugins/` instead — that's expected, not a misconfiguration.
 
 Mouse support is on (`set -g mouse on`) — click to select a pane/window, drag borders to resize. Colors are the same monochrome black/grey/white chrome as Kitty — see [Theme](#theme).
 
@@ -216,7 +216,7 @@ The whole stack (Kitty, tmux, Neovim) follows one principle: **interface chrome 
 
 - **Neovim** (`lua/plugins/colorscheme.lua`): base is `tokyonight` (`night` style), which still drives all code/syntax highlighting. A `ColorScheme` autocmd repaints only chrome groups (statusline, floats, popups, tabs, borders, Telescope/fzf-lua/which-key/snacks, mini.icons) to a `#0d0d0d`–`#404040` grey scale. `Diagnostic*` (errors/warnings/info/hints) and `GitSigns*` (add/change/delete) are deliberately left alone — they still carry their normal semantic colors.
 - **Kitty**: `background #0d0d0d`, `foreground #e0e0e0`, monochrome tabs/borders/selection. `color0`–`color15` (the ANSI palette `ls`/`git`/`bat` actually use) are left at Kitty's defaults, so command output stays full-color.
-- **tmux**: the status bar uses the exact same bg/fg as Neovim's `Normal` group (`#0d0d0d`/`#b8b8b8`); pane borders are grey (`colour250`/`colour242`).
+- **tmux**: the status bar uses the exact same bg/fg as Neovim's `Normal` group (`#0d0d0d`/`#b8b8b8`); pane borders are grey (`colour250`/`colour242`). Status-right shows three state indicators instead of the clock: an `SSH` warning (warm accent) when the active pane is running `ssh`, a `ZOOM` note when a pane is zoomed, and `saved HH:MM` / `autosave off` / `not saved yet` from `scripts/tmux-last-save` (tmux-continuum's own `#{continuum_status}` only shows the configured interval, not an actual time) — each only appears when relevant.
 - **Starship**: `[directory]`/`[git_branch]` are neutral white/grey, but `[character]` keeps green for success and red for a failing command, and `[git_status]` stays yellow — so pass/fail and dirty-tree signals stay visually distinct from the chrome around them.
 - **fzf**: match background/foreground are grey, but match highlighting, the pointer, and the marker keep distinct accent colors (blue/red/green) so they don't disappear into the chrome.
 
@@ -260,7 +260,9 @@ Inside copy mode, `v` starts a visual selection and `y` copies it to the system 
     ├── kitty/
     │   └── kitty.conf   # Font, cursor trail animation, monochrome color scheme
     ├── tmux/
-    │   └── tmux.conf    # Keybindings, mouse, monochrome pane/status colors, TPM plugins
+    │   ├── tmux.conf    # Keybindings, mouse, monochrome pane/status colors, TPM plugins
+    │   └── scripts/
+    │       └── tmux-last-save  # status-right helper (no .sh -- see .stow-local-ignore)
     ├── nvim/            # Neovim config (LazyVim-based)
     │   ├── init.lua     # Entry point — PATH prepend, autoread, loads LazyVim, sets system clipboard
     │   └── lazyvim.json # Which LazyVim extras are enabled

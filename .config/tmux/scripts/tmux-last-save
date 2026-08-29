@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Prints tmux-continuum's actual last-save status for the status bar.
+# No `.sh` extension -- `.stow-local-ignore` excludes `*.sh` from symlinking.
+
+interval="$(tmux show-option -gv @continuum-save-interval 2>/dev/null)"
+if [ -z "$interval" ] || [ "$interval" -le 0 ] 2>/dev/null; then
+    echo "autosave off"
+    exit 0
+fi
+
+timestamp="$(tmux show-option -gv @continuum-save-last-timestamp 2>/dev/null)"
+if [ -z "$timestamp" ]; then
+    echo "not saved yet"
+    exit 0
+fi
+
+echo "saved $(date -d "@$timestamp" +'%H:%M')"

@@ -1,2 +1,6 @@
 .zcompdump*
 **/.zcompdump*
+
+# TPM clones tmux-resurrect/tmux-continuum here because ~/.config/tmux is
+# a whole-directory symlink into this repo -- machine-local, not config.
+.config/tmux/plugins/
