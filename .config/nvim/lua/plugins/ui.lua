@@ -13,10 +13,6 @@ return {
         },
     },
 
-    -- Smooth cursor-move/scroll/resize animation, fits the mini.* family
-    -- already in use (mini.ai, mini.pairs, mini.icons, mini.hipatterns).
-    { "nvim-mini/mini.animate", event = "VeryLazy", opts = {} },
-
     -- Example: append a component to lualine.
     -- {
     --     "nvim-lualine/lualine.nvim",

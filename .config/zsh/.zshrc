@@ -4,6 +4,11 @@
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# Vi mode must be set before other tools (fzf, etc.) bind their own keys below --
+# `bindkey -v` switches to a separate vi keymap, so anything bound beforehand
+# (on the default "emacs" keymap) gets silently dropped.
+bindkey -v
+
 # fzf: use fd for the file source (Ubuntu ships fd as `fdfind`).
 export FZF_DEFAULT_COMMAND="fdfind --type f --hidden --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -94,10 +99,6 @@ plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
-# fzf shell integration (Ubuntu ships these under /usr/share/doc/fzf/examples)
-[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
-[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
-
 # zoxide replaces the OMZ `z` plugin — faster, better ranking.
 eval "$(zoxide init zsh)"
 
@@ -106,6 +107,10 @@ eval "$(atuin init zsh)"
 
 # Starship prompt.
 eval "$(starship init zsh)"
+
+# fzf shell integration: Ctrl+T (file widget), Ctrl+R (history, overridden by
+# atuin above), and **<Tab> fuzzy completion (e.g. `ssh **<Tab>` for hosts).
+eval "$(fzf --zsh)"
 
 export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -156,4 +161,9 @@ alias bat='batcat'
 alias cat='batcat'
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
-bindkey -v
+# fd: Ubuntu installs the binary as `fdfind` (the `fd` name is taken by another package)
+alias fd='fdfind'
+
+# clear shortcuts
+alias cl='clear'
+alias cls='clear'

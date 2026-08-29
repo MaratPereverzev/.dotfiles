@@ -62,9 +62,11 @@ sudo apt install starship zoxide eza bat fd-find ripgrep atuin
 | `zoxide`   | the OMZ `z` plugin                  | Frecency-based `cd` — `z proj` jumps straight to a matching directory |
 | `eza`      | `ls`                                | Icons + git status, aliased as `ls`/`ll`/`la`/`lt`                    |
 | `bat`      | `cat` / `man` pager                 | Syntax highlighting; Ubuntu installs the binary as `batcat`           |
-| `fd-find`  | `find`, feeds `fzf`                 | Ubuntu installs the binary as `fdfind`                                |
+| `fd-find`  | `find`, feeds `fzf`                 | Ubuntu installs the binary as `fdfind`; aliased as `fd`                |
 | `atuin`    | shell history search (`Ctrl+R`)     | Fuzzy, statistics-aware; runs local-only, no account/sync required    |
-| `fzf`      | (already installed) shell integration | Sources Ubuntu's bundled `key-bindings.zsh`/`completion.zsh`        |
+| `fzf`      | (already installed) shell integration | `eval "$(fzf --zsh)"` — `Ctrl+T`/`Ctrl+R`/`**<Tab>`                 |
+
+A couple of plain convenience aliases round it out: `cl`/`cls` for `clear`.
 
 ### 4. Node.js (via NVM)
 
@@ -146,10 +148,6 @@ On first launch, Lazy.nvim will automatically download and install all plugins. 
 - `formatting.prettier` — auto-format JS, TS, HTML, CSS, JSON, Markdown on save
 - `linting.eslint` — real-time ESLint diagnostics in JavaScript and TypeScript files
 - `lang.*` — full LSP support (completion, go-to-definition, diagnostics) for: Go, Python, TypeScript, SQL, YAML, JSON, TOML, Markdown, Terraform, Ansible, Docker, Tailwind CSS, Git
-
-**Custom plugins on top of LazyVim** (configured under `lua/plugins/`):
-
-- `mini.animate` — smooth cursor-move/scroll/resize animation
 
 Colorscheme (`lua/plugins/colorscheme.lua`) is `tokyonight` (`night` style) with a monochrome UI-chrome override on top — see [Theme](#theme) below.
 
