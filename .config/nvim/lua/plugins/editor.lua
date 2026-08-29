@@ -9,6 +9,7 @@ return {
                 function()
                     require("fzf-lua").files({
                         cwd = require("lazy.core.config").options.root,
+                        fd_opts = "--color=never --type f --hidden --follow --exclude .git",
                     })
                 end,
                 desc = "Find Plugin File",

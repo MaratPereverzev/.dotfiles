@@ -1,0 +1,35 @@
+# Minimal, fast prompt. Colors use named ANSI slots (not fixed hex values),
+# so it follows whatever terminal color scheme is active.
+# https://starship.rs/config/
+
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+command_timeout = 500
+
+format = """$directory$git_branch$git_status$character"""
+right_format = """$cmd_duration"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold blue)"
+
+[directory]
+style = "bold white"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+style = "white"
+format = "[on](dimmed white) [$symbol$branch]($style) "
+
+[git_status]
+style = "yellow"
+format = "([$all_status$ahead_behind]($style)) "
+
+[cmd_duration]
+min_time = 2000
+style = "dimmed white"
+format = "[  took $duration]($style)"

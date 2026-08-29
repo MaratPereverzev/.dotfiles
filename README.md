@@ -46,9 +46,38 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting \
   ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 ```
 
-The `git` and `z` plugins are built into Oh My Zsh and need no extra steps.
+The `git` plugin is built into Oh My Zsh and needs no extra steps. The `z` plugin is no longer used — it's replaced by `zoxide` (see the next section).
 
-### 3. Terminal emulator
+### 3. Prompt & shell speed tools
+
+The prompt is [Starship](https://starship.rs) instead of an Oh My Zsh theme. A handful of Rust CLI tools replace their slower/plainer built-in equivalents, and `fzf`'s shell integration (fuzzy `Ctrl+T`/`Ctrl+R`/`**<Tab>`) is wired up instead of just being available inside Neovim/Yazi.
+
+```bash
+sudo apt install starship zoxide eza bat fd-find ripgrep atuin
+```
+
+| Tool       | Replaces / adds                    | Notes                                                                 |
+| ---------- | ----------------------------------- | ---------------------------------------------------------------------|
+| `starship` | Oh My Zsh theme                     | Async, minimal, configured in `~/.config/starship.toml`               |
+| `zoxide`   | the OMZ `z` plugin                  | Frecency-based `cd` — `z proj` jumps straight to a matching directory |
+| `eza`      | `ls`                                | Icons + git status, aliased as `ls`/`ll`/`la`/`lt`                    |
+| `bat`      | `cat` / `man` pager                 | Syntax highlighting; Ubuntu installs the binary as `batcat`           |
+| `fd-find`  | `find`, feeds `fzf`                 | Ubuntu installs the binary as `fdfind`                                |
+| `atuin`    | shell history search (`Ctrl+R`)     | Fuzzy, statistics-aware; runs local-only, no account/sync required    |
+| `fzf`      | (already installed) shell integration | Sources Ubuntu's bundled `key-bindings.zsh`/`completion.zsh`        |
+
+### 4. Node.js (via NVM)
+
+Optional — only needed if you work with Node. `.zshrc` loads NVM from `~/.config/nvm` if it's present; nothing breaks if it isn't installed.
+
+```bash
+# Installs to ~/.config/nvm because XDG_CONFIG_HOME is set to ~/.config in .zshenv
+PROFILE=/dev/null NVM_DIR="$HOME/.config/nvm" bash -c "$(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh)"
+```
+
+Neovim's `init.lua` also prepends `~/.local/node/bin` (and `~/.local/go/bin`, `~/.local/bin`) to its `PATH` at startup, so Mason-installed LSP servers/formatters can find `npm`/`node` even when Neovim is launched from a GUI shortcut with a stripped environment.
+
+### 5. Terminal emulator
 
 Kitty is a fast, GPU-rendered terminal. It supports ligatures, images, and splits natively.
 
@@ -68,7 +97,9 @@ sudo apt install fonts-jetbrains-mono
 fc-cache -fv
 ```
 
-### 4. tmux
+Colors are a monochrome black/grey/white chrome (background/cursor/tabs/borders) — see [Theme](#theme) below for the full story on what stays colorful.
+
+### 6. tmux
 
 tmux lets you split a single terminal window into multiple panes, create named windows, and keep sessions alive when you disconnect. `xclip` is a small utility that bridges the tmux clipboard with the system clipboard.
 
@@ -78,7 +109,17 @@ sudo apt install tmux xclip
 
 Without `xclip`, the `Alt+p` paste binding won't work and `y` in copy mode won't write to the system clipboard.
 
-### 5. Neovim
+Plugins are managed by [TPM](https://github.com/tmux-plugins/tpm) — clone it manually, same as the Zsh plugins above:
+
+```bash
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+```
+
+Then start tmux and press `Ctrl+b` `Shift+I` (the default tmux prefix is still active alongside the no-prefix bindings below) to fetch the plugins: `tmux-resurrect` + `tmux-continuum` (auto-save/restore sessions and pane layout).
+
+Mouse support is on (`set -g mouse on`) — click to select a pane/window, drag borders to resize. Colors are the same monochrome black/grey/white chrome as Kitty — see [Theme](#theme).
+
+### 7. Neovim
 
 Neovim is the main editor. This config uses [LazyVim](https://lazyvim.org), a pre-configured distribution that sets up LSP, autocompletion, fuzzy finding, and formatting out of the box. LazyVim requires **Neovim 0.9 or later**.
 
@@ -106,7 +147,13 @@ On first launch, Lazy.nvim will automatically download and install all plugins. 
 - `linting.eslint` — real-time ESLint diagnostics in JavaScript and TypeScript files
 - `lang.*` — full LSP support (completion, go-to-definition, diagnostics) for: Go, Python, TypeScript, SQL, YAML, JSON, TOML, Markdown, Terraform, Ansible, Docker, Tailwind CSS, Git
 
-### 6. Yazi
+**Custom plugins on top of LazyVim** (configured under `lua/plugins/`):
+
+- `mini.animate` — smooth cursor-move/scroll/resize animation
+
+Colorscheme (`lua/plugins/colorscheme.lua`) is `tokyonight` (`night` style) with a monochrome UI-chrome override on top — see [Theme](#theme) below.
+
+### 8. Yazi
 
 Yazi is a blazing-fast terminal file manager written in Rust. It shows file previews, supports bulk rename, and integrates with tools like `fzf` and `fd`.
 
@@ -120,7 +167,7 @@ sudo apt install yazi
 
 The `keymap.toml` config remaps navigation to `h/j/k/l` so it feels like Vim.
 
-### 7. GNU Stow
+### 9. GNU Stow
 
 Stow is the tool that actually applies your dotfiles. It reads the directory structure inside `~/.dotfiles` and creates matching symlinks in your home directory.
 
@@ -144,16 +191,17 @@ Files listed in `.stow-local-ignore` (`.git`, `*.md`, `*.sh`) are never symlinke
 
 ## Shell configuration
 
-The shell theme is `robbyrussell` — the default Oh My Zsh theme that shows your current directory and git branch status in the prompt.
+The prompt is [Starship](https://starship.rs) (`~/.config/starship.toml`) — async, minimal, colored with named ANSI slots (so it follows whatever terminal color scheme is active), with a vi-mode-aware character and command-duration indicator.
 
 **Active plugins:**
 
 | Plugin                    | What it does                                                                                                                                 |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `git`                     | Adds dozens of short aliases like `gst` for `git status`, `gco` for `git checkout`, and displays branch info in the prompt                   |
-| `z`                       | Tracks the directories you visit most. After a few sessions, `z proj` will jump straight to your project folder without typing the full path |
+| `git`                     | Adds dozens of short aliases like `gst` for `git status`, `gco` for `git checkout`                                                            |
 | `zsh-autosuggestions`     | Shows a faint suggestion based on your history as you type — press `→` to accept                                                             |
 | `zsh-syntax-highlighting` | Colors your command green if it's valid, red if it's not, before you run it                                                                  |
+
+Directory jumping, listing, paging, and history search are handled outside Oh My Zsh by `zoxide`/`eza`/`bat`/`atuin` — see [Prompt & shell speed tools](#3-prompt--shell-speed-tools) above.
 
 **Vi mode** is enabled with `bindkey -v`. Press `Esc` at the prompt to enter normal mode, where you can navigate and edit the command line with standard Vim motions (`w`, `b`, `0`, `$`, `cw`, etc.).
 
@@ -164,25 +212,37 @@ The shell theme is `robbyrussell` — the default Oh My Zsh theme that shows you
 - `HIST_IGNORE_SPACE` — commands starting with a space are not saved (useful for secrets)
 - `HIST_EXPIRE_DUPS_FIRST` — when the limit is reached, duplicates are removed first
 
+## Theme
+
+The whole stack (Kitty, tmux, Neovim) follows one principle: **interface chrome goes black/grey/white; content and state stay in their normal colors.**
+
+- **Neovim** (`lua/plugins/colorscheme.lua`): base is `tokyonight` (`night` style), which still drives all code/syntax highlighting. A `ColorScheme` autocmd repaints only chrome groups (statusline, floats, popups, tabs, borders, Telescope/fzf-lua/which-key/snacks, mini.icons) to a `#0d0d0d`–`#404040` grey scale. `Diagnostic*` (errors/warnings/info/hints) and `GitSigns*` (add/change/delete) are deliberately left alone — they still carry their normal semantic colors.
+- **Kitty**: `background #0d0d0d`, `foreground #e0e0e0`, monochrome tabs/borders/selection. `color0`–`color15` (the ANSI palette `ls`/`git`/`bat` actually use) are left at Kitty's defaults, so command output stays full-color.
+- **tmux**: the status bar uses the exact same bg/fg as Neovim's `Normal` group (`#0d0d0d`/`#b8b8b8`); pane borders are grey (`colour250`/`colour242`).
+- **Starship**: `[directory]`/`[git_branch]` are neutral white/grey, but `[character]` keeps green for success and red for a failing command, and `[git_status]` stays yellow — so pass/fail and dirty-tree signals stay visually distinct from the chrome around them.
+- **fzf**: match background/foreground are grey, but match highlighting, the pointer, and the marker keep distinct accent colors (blue/red/green) so they don't disappear into the chrome.
+
 ## tmux keybindings
 
-All bindings use `Alt` as the modifier directly — there is no prefix key to press first. This makes navigation much faster.
+All bindings use `Alt` as the modifier directly — there is no prefix key to press first. This makes navigation much faster. Mouse support is also on — click a pane/window to select it, drag a border to resize.
 
 | Key                | Action                                                       |
 | ------------------ | ------------------------------------------------------------ |
 | `Alt+n`            | New window                                                   |
 | `Alt+L` / `Alt+H`  | Next / previous window                                       |
+| `Alt+{` / `Alt+}`  | Swap window left / right                                     |
 | `Alt+Q`            | Kill current window                                          |
 | `Alt+Enter`        | Split pane horizontally (side by side)                       |
 | `Alt+\`            | Split pane vertically (top and bottom)                       |
 | `Alt+h/j/k/l`      | Move focus between panes                                     |
+| `Alt+,` / `Alt+.` / `Alt+K` / `Alt+J` | Move focus and swap the pane in that direction  |
 | `Ctrl+Alt+h/j/k/l` | Resize the current pane                                      |
 | `Alt+f`            | Zoom the current pane to full screen (press again to unzoom) |
 | `Alt+q`            | Kill current pane                                            |
 | `Alt+[`            | Enter scroll / copy mode                                     |
 | `Alt+p`            | Paste from system clipboard                                  |
 | `Alt+BSpace`       | Clear the pane's scroll history                              |
-| `Alt+R`            | Reload tmux config without restarting                        |
+| `Alt+R`            | Reload tmux config without restarting                         |
 
 Inside copy mode, `v` starts a visual selection and `y` copies it to the system clipboard via `xclip`. `Escape` cancels.
 
@@ -197,13 +257,14 @@ Inside copy mode, `v` starts a visual selection and `y` copies it to the system 
 └── .config/
     ├── zsh/
     │   ├── .zshenv      # Loaded for every shell (login, non-login, scripts). Sets XDG paths, EDITOR, and PATH
-    │   └── .zshrc       # Interactive shell config: Oh My Zsh, plugins, history, vi mode
+    │   └── .zshrc       # Interactive shell config: Oh My Zsh, plugins, history, vi mode, fzf/zoxide/atuin/starship init
+    ├── starship.toml    # Prompt config
     ├── kitty/
-    │   └── kitty.conf   # Font family, font size, audio bell disabled
+    │   └── kitty.conf   # Font, cursor trail animation, monochrome color scheme
     ├── tmux/
-    │   └── tmux.conf    # All keybindings, pane/border styles, clipboard integration
+    │   └── tmux.conf    # Keybindings, mouse, monochrome pane/status colors, TPM plugins
     ├── nvim/            # Neovim config (LazyVim-based)
-    │   ├── init.lua     # Entry point — loads LazyVim and sets system clipboard
+    │   ├── init.lua     # Entry point — PATH prepend, autoread, loads LazyVim, sets system clipboard
     │   └── lazyvim.json # Which LazyVim extras are enabled
     └── yazi/
         └── keymap.toml  # Remaps arrow keys to hjkl for Vim-style navigation

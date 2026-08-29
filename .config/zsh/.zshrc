@@ -3,13 +3,19 @@
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
-export FZF_DEFAULT_OPTS="--bind 'ctrl-j:down,ctrl-k:up,ctrl-d:preview-page-down,ctrl-u:preview-page-up'"
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+# fzf: use fd for the file source (Ubuntu ships fd as `fdfind`).
+export FZF_DEFAULT_COMMAND="fdfind --type f --hidden --exclude .git"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+# Chrome (fg/bg/border) is grey to match the rest of the stack; match
+# highlight/pointer/marker stay on distinct accent colors so they're visible.
+export FZF_DEFAULT_OPTS="--bind 'ctrl-j:down,ctrl-k:up,ctrl-d:preview-page-down,ctrl-u:preview-page-up' \
+--color=fg:#b8b8b8,bg:#0d0d0d,fg+:#e0e0e0,bg+:#202020 \
+--color=hl:blue,hl+:blue,info:#8c8c8c,border:#404040 \
+--color=prompt:#e0e0e0,pointer:red,marker:green,spinner:green"
+
+# Prompt is Starship (see ~/.config/starship.toml) instead of an Oh My Zsh theme.
+ZSH_THEME=""
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -84,9 +90,26 @@ setopt NUMERIC_GLOB_SORT
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git z zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
+
+# fzf shell integration (Ubuntu ships these under /usr/share/doc/fzf/examples)
+[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+
+# zoxide replaces the OMZ `z` plugin — faster, better ranking.
+eval "$(zoxide init zsh)"
+
+# atuin: fuzzy, statistics-aware history search on Ctrl+R (local only, no sync).
+eval "$(atuin init zsh)"
+
+# Starship prompt.
+eval "$(starship init zsh)"
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # User configuration
 
@@ -121,5 +144,16 @@ alias rebt='systemctl reboot'
 alias lout='loginctl terminate-session self'
 alias susp='systemctl suspend'
 alias hibr='systemctl hibernate'
+
+# eza: ls replacement with icons + git status
+alias ls='eza --icons'
+alias ll='eza -l --icons --git'
+alias la='eza -la --icons --git'
+alias lt='eza --tree --icons'
+
+# bat: syntax-highlighted cat (Ubuntu package installs the binary as `batcat`)
+alias bat='batcat'
+alias cat='batcat'
+export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
 bindkey -v
