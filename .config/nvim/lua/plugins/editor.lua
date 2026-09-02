@@ -3,6 +3,15 @@
 return {
     {
         "ibhagwan/fzf-lua",
+        -- Show dotfiles (already fzf-lua's default) and gitignored files
+        -- (like .env) too -- otherwise they're only reachable per-search via
+        -- the built-in <A-h>/<A-i> toggles.
+        opts = {
+            files = {
+                hidden = true,
+                fd_opts = [[--color=never --type f --type l --hidden --no-ignore --exclude .git --exclude .jj]],
+            },
+        },
         keys = {
             {
                 "<leader>fp",

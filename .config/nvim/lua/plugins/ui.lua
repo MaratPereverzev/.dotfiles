@@ -10,6 +10,17 @@ return {
             notifier = {
                 level = vim.log.levels.WARN,
             },
+            -- Explorer (<leader>e) hides dotfiles and gitignored files by
+            -- default; show both. Still togglable per-session with
+            -- Shift+H/Shift+I inside the explorer.
+            picker = {
+                sources = {
+                    explorer = {
+                        hidden = true,
+                        ignored = true,
+                    },
+                },
+            },
         },
     },
 
