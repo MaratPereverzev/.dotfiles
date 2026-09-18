@@ -172,3 +172,6 @@ alias cls='clear'
 alias wifi='wifi-menu'
 alias bt='bt-menu'
 alias sound='pulsemixer'
+
+# opencode
+export PATH=/home/marat/.opencode/bin:$PATH

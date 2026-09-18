@@ -27,8 +27,6 @@ git clone https://github.com/your-username/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles && stow .
 ```
 
-Then in tmux: `Ctrl+b` `Shift+I` to fetch `tmux-resurrect`/`tmux-continuum` via TPM.
-
 Optional Node (only if needed):
 ```bash
 PROFILE=/dev/null NVM_DIR="$HOME/.config/nvm" bash -c "$(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh)"
@@ -57,8 +55,44 @@ Plus: `cl`/`cls` → `clear`. Active OMZ plugins: `git`, `zsh-autosuggestions`, 
 | `wifi` | `wifi-menu` (`.local/bin/`) | fzf menu over `nmcli`: connect/switch, disconnect, forget, show config |
 | `bt` | `bt-menu` (`.local/bin/`) | fzf menu over `bluetoothctl`: connect/disconnect/pair/forget/scan/power/info |
 | `sound` | `pulsemixer` | needs `sudo apt install pulsemixer` |
+| — | `wg-tray` (tray icon, autostarts) | toggles `wg-quick` WireGuard tunnels — see [WireGuard](#wireguard-wg-tray) |
 
 Both custom menus share one shape with `wifi-menu`/`bt-menu`: pick an action from the top menu, act, land back on the menu (Esc there to quit). `Ctrl+J`/`Ctrl+K` move up/down everywhere so plain letters stay free for typing a filter. Neither script has a `.sh` extension — see `.stow-local-ignore`.
+
+## WireGuard (wg-tray)
+
+Tunnels defined as plain `wg-quick` configs (`/etc/wireguard/<iface>.conf` + `systemctl enable wg-quick@<iface>`) get a tray icon via [wg-tray](https://wg-tray.arcanite.ch/) instead of GNOME's Quick Settings toggle.
+
+**Why not the built-in GNOME toggle:** NetworkManager auto-detects a `wg-quick`-managed interface and shows its own on/off switch in Quick Settings, but it doesn't own the interface's lifecycle. Switching it off there skips `wg-quick`'s cleanup — it deletes the interface but leaves the `ip rule`/`nftables` policy-routing behind, which blackholes *all* traffic (wifi included) until reboot, and the connection then vanishes from the menu until NetworkManager rescans. Fix is to tell NetworkManager to leave the interface alone and control it only through `wg-quick`/`wg-tray`.
+
+Stowed (`.config/autostart/wg-tray.desktop`, `.wireguard/wg_tray_interfaces`): autostart entry (forces `QT_QPA_PLATFORM=wayland` — PyQt5's default `xcb` plugin fails on a Wayland session) and the list of interface names the tray shows.
+
+**Not stowed** — system-level, one-time setup per machine (replace `<iface>` with the tunnel's name, e.g. `wginno`):
+
+```bash
+# 1. Install wg-tray
+sudo apt install pipx
+pipx ensurepath
+pipx install wg-tray
+
+# 2. Stop NetworkManager from managing/showing the interface
+sudo tee /etc/NetworkManager/conf.d/99-unmanaged-<iface>.conf >/dev/null <<EOF
+[keyfile]
+unmanaged-devices=interface-name:<iface>
+EOF
+sudo systemctl reload NetworkManager
+
+# 3. Let wg-tray call wg-quick without a password prompt (scoped to this interface only)
+echo '<user> ALL=(ALL) NOPASSWD: /usr/bin/wg-quick up <iface>, /usr/bin/wg-quick down <iface>, /usr/bin/wg' \
+  | sudo tee /etc/sudoers.d/wg-tray-<iface> >/dev/null
+sudo visudo -cf /etc/sudoers.d/wg-tray-<iface>   # validate before trusting it
+sudo chmod 0440 /etc/sudoers.d/wg-tray-<iface>
+
+# 4. List the interface(s) the tray should show
+echo '<iface>' >> ~/.wireguard/wg_tray_interfaces   # already stowed, just append per machine
+```
+
+Then `stow .` (or log back in) picks up the autostart entry.
 
 ## Kitty
 
@@ -90,12 +124,11 @@ No prefix key — everything is `Alt`-modified directly.
 
 Copy mode (vi-style): `v` select, `y` copy to system clipboard, `Escape` cancel.
 
-Mouse is on (click to select, drag to resize). Plugins via TPM: `tmux-resurrect` + `tmux-continuum` (autosave every 15 min, restore on start). Note: since this config lives at `~/.config/tmux/tmux.conf`, TPM installs plugins under `~/.config/tmux/plugins/`, not `~/.tmux/plugins/` (only TPM itself lives there).
+Mouse is on (click to select, drag to resize). No session/layout autosave or restore — closing the terminal just ends the session. Note: since this config lives at `~/.config/tmux/tmux.conf`, TPM installs plugins under `~/.config/tmux/plugins/`, not `~/.tmux/plugins/` (only TPM itself lives there).
 
 Status bar (right side, monochrome, only shows when relevant):
 - `SSH` — active pane is running `ssh` (warm accent, so you notice you're on a remote host)
 - `ZOOM` — a pane in the window is zoomed
-- `saved HH:MM` / `autosave off` / `not saved yet` — from `scripts/tmux-last-save`, reads tmux-continuum's real save timestamp (its own `#{continuum_status}` only shows the configured interval, not a time)
 
 ## Neovim
 
@@ -130,6 +163,8 @@ Chrome (window/status bar backgrounds, borders, popups) is black/grey/white ever
 ├── .local/bin/
 │   ├── wifi-menu        # fzf/nmcli Wi-Fi menu (no .sh, see .stow-local-ignore)
 │   └── bt-menu          # fzf/bluetoothctl Bluetooth menu (same reason)
+├── .wireguard/
+│   └── wg_tray_interfaces  # interface names wg-tray shows in its menu
 └── .config/
     ├── zsh/
     │   ├── .zshenv      # XDG paths, EDITOR, PATH
@@ -138,14 +173,14 @@ Chrome (window/status bar backgrounds, borders, popups) is black/grey/white ever
     ├── kitty/
     │   └── kitty.conf
     ├── tmux/
-    │   ├── tmux.conf
-    │   └── scripts/
-    │       └── tmux-last-save  # no .sh extension — see .stow-local-ignore
+    │   └── tmux.conf
     ├── nvim/            # LazyVim
     │   ├── init.lua
     │   └── lazyvim.json
-    └── yazi/
-        └── keymap.toml
+    ├── yazi/
+    │   └── keymap.toml
+    └── autostart/
+        └── wg-tray.desktop  # see WireGuard section — needs system-level setup too
 ```
 
 ## XDG base directories

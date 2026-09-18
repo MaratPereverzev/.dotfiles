@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=wg-tray
+Exec=sh -c 'QT_QPA_PLATFORM=wayland exec "$HOME/.local/bin/wg-tray" -c "$HOME/.wireguard/wg_tray_interfaces"'
+Icon=network-vpn
+X-GNOME-Autostart-enabled=true
+Comment=WireGuard tray indicator
